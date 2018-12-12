@@ -29,6 +29,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import java.util.List;
 import java.util.UUID;
 
 import no.nordicsemi.android.ble.BleManager;
@@ -50,23 +51,12 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 	/**
 	 * The service UUID.
 	 */
-	static final UUID SERVICE_UUID = UUID.fromString("0000180D-0000-1000-8000-00805f9b34fb"); // Heart Rate service
-	/**
-	 * A UUID of a characteristic with notify property.
-	 */
-	private static final UUID MEASUREMENT_CHARACTERISTIC_UUID = UUID.fromString("00002A37-0000-1000-8000-00805f9b34fb"); // Heart Rate Measurement
-	/**
-	 * A UUID of a characteristic with read property.
-	 */
-	private static final UUID READABLE_CHARACTERISTIC_UUID = UUID.fromString("00002A38-0000-1000-8000-00805f9b34fb"); // Body Sensor Location
-	/**
-	 * Some other service UUID.
-	 */
-	private static final UUID OTHER_SERVICE_UUID = UUID.fromString("00001800-0000-1000-8000-00805f9b34fb"); // Generic Access service
+	static final UUID SERVICE_UUID = UUID.fromString("000018D0-0000-1000-8000-00805f9b34fb"); // Heart Rate service
+
 	/**
 	 * A UUID of a characteristic with write property.
 	 */
-	private static final UUID WRITABLE_CHARACTERISTIC_UUID = UUID.fromString("00002A00-0000-1000-8000-00805f9b34fb"); // Device Name
+	private static final UUID WRITABLE_CHARACTERISTIC_UUID = UUID.fromString("00002D01-0000-1000-8000-00805f9b34fb"); // Device Name
 
 	// TODO Add more services and characteristics references.
 	private BluetoothGattCharacteristic mRequiredCharacteristic, mDeviceNameCharacteristic, mOptionalCharacteristic;
@@ -147,28 +137,13 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 		protected boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {
 			// TODO Initialize required characteristics.
 			// It should return true if all has been discovered (that is that device is supported).
+			List<BluetoothGattService> services = gatt.getServices();
+
 			final BluetoothGattService service = gatt.getService(SERVICE_UUID);
 			if (service != null) {
-				mRequiredCharacteristic = service.getCharacteristic(MEASUREMENT_CHARACTERISTIC_UUID);
+				mRequiredCharacteristic = service.getCharacteristic(WRITABLE_CHARACTERISTIC_UUID);
 			}
-			final BluetoothGattService otherService = gatt.getService(OTHER_SERVICE_UUID);
-			if (otherService != null) {
-				mDeviceNameCharacteristic = otherService.getCharacteristic(WRITABLE_CHARACTERISTIC_UUID);
-			}
-			return mRequiredCharacteristic != null && mDeviceNameCharacteristic != null;
-		}
-
-		@Override
-		protected boolean isOptionalServiceSupported(@NonNull final BluetoothGatt gatt) {
-			// Initialize Battery characteristic
-			super.isOptionalServiceSupported(gatt);
-
-			// TODO If there are some optional characteristics, initialize them there.
-			final BluetoothGattService service = gatt.getService(SERVICE_UUID);
-			if (service != null) {
-				mOptionalCharacteristic = service.getCharacteristic(READABLE_CHARACTERISTIC_UUID);
-			}
-			return mOptionalCharacteristic != null;
+			return mRequiredCharacteristic != null;
 		}
 
 		@Override
