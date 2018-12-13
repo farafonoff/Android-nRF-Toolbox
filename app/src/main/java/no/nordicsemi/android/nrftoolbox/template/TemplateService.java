@@ -22,6 +22,7 @@
 
 package no.nordicsemi.android.nrftoolbox.template;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -30,9 +31,22 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
+import android.widget.Toast;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import no.nordicsemi.android.log.Logger;
 import no.nordicsemi.android.nrftoolbox.FeaturesActivity;
@@ -56,7 +70,11 @@ public class TemplateService extends BleProfileService implements TemplateManage
 
 	private TemplateManager mManager;
 
+	private static BluetoothDevice msDevice;
+
 	private final LocalBinder mBinder = new TemplateBinder();
+
+	PhoneBroadcastReceiver mReciever = new PhoneBroadcastReceiver();
 
 	/**
 	 * This local binder is an interface for the bound activity to operate with the sensor.
@@ -70,7 +88,49 @@ public class TemplateService extends BleProfileService implements TemplateManage
 		 * @param parameter some parameter.
 		 */
 		public void performAction(final String parameter) {
-			mManager.performAction(parameter);
+			TemplateService.this.
+			 mManager.performAction(parameter);
+		}
+
+		public void notifyCall(final String callerId, int times) {
+			TemplateService.this.notifyCall(callerId, times);
+			//mManager.notifyCall(callerId);
+		}
+	}
+
+
+	String getFromPhonebook(Context context, String number) {
+		Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
+		Cursor c = context.getContentResolver().query(lookupUri, new String[]{ContactsContract.Data.DISPLAY_NAME},null,null,null);
+		try {
+			if(c.moveToFirst()) {
+				String displayName = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+				//displayName = c.getString(0);
+				String ContactName = displayName;
+				Toast.makeText(context, ContactName, Toast.LENGTH_LONG).show();
+				return ContactName;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}finally{
+			c.close();
+		}
+		return null;
+	}
+
+	ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+	void notifyCall(final String callerId, int times) {
+		String displayName = getFromPhonebook(this, callerId);
+		String text = BrtlUtils.transliterate(displayName == null?callerId:displayName);
+		if (text.length() > 11) {
+			text = text.substring(0, 11);
+		}
+		final String notifyText = text;
+		mManager.notifyCall(notifyText);
+		if (times > 1) {
+			ScheduledFuture handle = executorService.scheduleAtFixedRate(() -> mManager.notifyCall(notifyText), 5,5, TimeUnit.SECONDS);
+			Runnable canceller = () -> handle.cancel(false);
+			executorService.schedule(canceller, 5*times, TimeUnit.SECONDS);
 		}
 	}
 
@@ -91,6 +151,18 @@ public class TemplateService extends BleProfileService implements TemplateManage
 		final IntentFilter filter = new IntentFilter();
 		filter.addAction(ACTION_DISCONNECT);
 		registerReceiver(mDisconnectActionBroadcastReceiver, filter);
+
+		IntentFilter phoneFilter = new IntentFilter();
+		phoneFilter.addAction("android.intent.action.PHONE_STATE");
+		registerReceiver(mReciever, phoneFilter);
+		/*TelephonyManager tm = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
+		tm.listen(new CallStateListener(), PhoneStateListener.LISTEN_CALL_STATE);*/
+	}
+
+	@Override
+	public void onDeviceReady(@NonNull BluetoothDevice device) {
+		super.onDeviceReady(device);
+		msDevice = device;
 	}
 
 	@Override
@@ -98,6 +170,7 @@ public class TemplateService extends BleProfileService implements TemplateManage
 		// when user has disconnected from the sensor, we have to cancel the notification that we've created some milliseconds before using unbindService
 		cancelNotification();
 		unregisterReceiver(mDisconnectActionBroadcastReceiver);
+		unregisterReceiver(mReciever);
 
 		super.onDestroy();
 	}
@@ -182,4 +255,24 @@ public class TemplateService extends BleProfileService implements TemplateManage
 				stopSelf();
 		}
 	};
+
+	@Override
+	protected boolean shouldAutoConnect() {
+		return true;
+	}
+
+	/*(private class CallStateListener extends PhoneStateListener {
+		@Override
+		public void onCallStateChanged(int state, String incomingNumber) {
+			switch (state) {
+				case TelephonyManager.CALL_STATE_RINGING:
+					// called when someone is ringing to this phone
+
+					Toast.makeText(TemplateService.this,
+							"Incoming: "+incomingNumber,
+							Toast.LENGTH_LONG).show();
+					break;
+			}
+		}
+	}*/
 }

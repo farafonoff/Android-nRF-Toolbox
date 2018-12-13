@@ -47,6 +47,7 @@ import no.nordicsemi.android.nrftoolbox.template.callback.TemplateDataCallback;
  * and replace BatteryManagerGattCallback to BleManagerGattCallback in this class.
  */
 public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
+	BrtlUtils transport = new BrtlUtils();
 	// TODO Replace the services and characteristics below to match your device.
 	/**
 	 * The service UUID.
@@ -205,5 +206,27 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 				// Callback called when write has failed.
 				.fail((device, status) -> log(Log.WARN, "Failed to change device name"))
 				.enqueue();
+	}
+
+    public void notifyCall(String callerId) {
+		byte[][] data = transport.pushContent(callerId);
+		writeCharacteristic(mRequiredCharacteristic, new Data(data[0]))
+				// If data are longer than MTU-3, they will be chunked into multiple packets.
+				// Check out other split options, with .split(...).
+				//.split()
+				// Callback called when data were sent, or added to outgoing queue in case
+				// Write Without Request type was used.
+				.with((device, sent) -> log(Log.DEBUG, sent.size() + " bytes were sent"))
+				// Callback called when data were sent, or added to outgoing queue in case
+				// Write Without Request type was used. This is called after .with(...) callback.
+				.done(device -> log(LogContract.Log.Level.APPLICATION, "Sent notify \"" + callerId + "\""))
+				// Callback called when write has failed.
+				.fail((device, status) -> log(Log.WARN, "Failed to notify"))
+				.enqueue();
+	}
+
+	@Override
+	protected boolean shouldAutoConnect() {
+		return true;
 	}
 }

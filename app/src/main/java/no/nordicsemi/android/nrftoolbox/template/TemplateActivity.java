@@ -21,18 +21,23 @@
  */
 package no.nordicsemi.android.nrftoolbox.template;
 
+import android.Manifest;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.view.Menu;
 import android.view.View;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import no.nordicsemi.android.nrftoolbox.R;
@@ -63,7 +68,22 @@ public class TemplateActivity extends BleProfileServiceReadyActivity<TemplateSer
 		mValueView = findViewById(R.id.value);
 		mBatteryLevelView = findViewById(R.id.battery);
 
-		findViewById(R.id.action_set_name).setOnClickListener(v -> getService().performAction("Template"));
+		findViewById(R.id.action_set_name).setOnClickListener(v -> getService().notifyCall("Hello World", 1));
+
+		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED
+			||
+			ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED)
+		{
+			requestPermission();
+		}
+	}
+
+	public void requestPermission() {
+		final List<String> permissionsList = new ArrayList<String>();
+		permissionsList.add(Manifest.permission.READ_PHONE_STATE);
+		permissionsList.add(Manifest.permission.READ_CONTACTS);
+		ActivityCompat.requestPermissions(this,permissionsList.toArray(new String[permissionsList.size()]),
+				1);
 	}
 
 	@Override
