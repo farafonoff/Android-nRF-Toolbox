@@ -98,6 +98,24 @@ public class TemplateService extends BleProfileService implements TemplateManage
 		}
 	}
 
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		 int original = super.onStartCommand(intent, flags, startId);
+		 String notifyType = intent.getStringExtra("notify");
+		 String notifyContent = intent.getStringExtra("notifyContent");
+		 if ("call".equals(notifyType)) {
+			 final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ToolboxApplication.CONNECTED_DEVICE_CHANNEL);
+			 builder.setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.template_notification_connected_message, getDeviceName()));
+			 builder.setSmallIcon(R.drawable.ic_stat_notify_template);
+			 //builder.setShowWhen(defaults != 0).setDefaults(defaults).setAutoCancel(true).setOngoing(true);
+			 //builder.addAction(new NotificationCompat.Action(R.drawable.ic_action_bluetooth, getString(R.string.template_notification_action_disconnect), disconnectAction));
+			 final Notification notification = builder.build();
+			 startForeground(1, notification);
+		 	notifyCall(notifyContent, 2);
+		 	return START_STICKY;
+		 }
+		 return original;
+	}
 
 	String getFromPhonebook(Context context, String number) {
 		Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));

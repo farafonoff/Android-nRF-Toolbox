@@ -32,7 +32,7 @@ public class PhoneBroadcastReceiver extends BroadcastReceiver {
         Bundle bundle = intent.getExtras();
         String phoneNr = bundle.getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
         String state = bundle.getString(TelephonyManager.EXTRA_STATE);
-        if (bracelet == null) {
+        /*if (bracelet == null) {
             Intent serviceIntent = new Intent(context, TemplateService.class);
             serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS, "46:31:35:80:04:A8");
             TemplateService.TemplateBinder myBinder = (TemplateService.TemplateBinder) this.peekService(context, serviceIntent);
@@ -44,9 +44,15 @@ public class PhoneBroadcastReceiver extends BroadcastReceiver {
         }
         if (bracelet != null && bracelet.isConnected()) {
             bracelet.notifyCall(phoneNr);
-        }
-        /*Toast.makeText(context,
+        }*/
+        Intent serviceIntent = new Intent(context, TemplateService.class);
+        serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS, "46:31:35:80:04:A8");
+        serviceIntent.putExtra("notify", "call");
+        serviceIntent.putExtra("notifyContent", phoneNr);
+        context.startForegroundService(serviceIntent);
+        //context.startService(serviceIntent);
+        Toast.makeText(context,
                 "Incoming: "+phoneNr,
-                Toast.LENGTH_LONG).show();*/
+                Toast.LENGTH_LONG).show();
     }
 }
