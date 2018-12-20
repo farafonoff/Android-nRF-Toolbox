@@ -37,6 +37,7 @@ import no.nordicsemi.android.ble.data.Data;
 import no.nordicsemi.android.log.LogContract;
 import no.nordicsemi.android.nrftoolbox.battery.BatteryManager;
 import no.nordicsemi.android.nrftoolbox.parser.TemplateParser;
+import no.nordicsemi.android.nrftoolbox.profile.LoggableBleManager;
 import no.nordicsemi.android.nrftoolbox.template.callback.TemplateDataCallback;
 
 /**
@@ -46,7 +47,7 @@ import no.nordicsemi.android.nrftoolbox.template.callback.TemplateDataCallback;
  * {@link TemplateManagerCallbacks} to extend {@link no.nordicsemi.android.ble.BleManagerCallbacks}
  * and replace BatteryManagerGattCallback to BleManagerGattCallback in this class.
  */
-public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
+public class TemplateManager extends LoggableBleManager<TemplateManagerCallbacks> {
 	BrtlUtils transport = new BrtlUtils();
 	// TODO Replace the services and characteristics below to match your device.
 	/**
@@ -68,7 +69,7 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 
 	@NonNull
 	@Override
-	protected BatteryManagerGattCallback getGattCallback() {
+	protected BleManagerGattCallback getGattCallback() {
 		return mGattCallback;
 	}
 
@@ -76,7 +77,7 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 	 * BluetoothGatt callbacks for connection/disconnection, service discovery,
 	 * receiving indication, etc.
 	 */
-	private final BatteryManagerGattCallback mGattCallback = new BatteryManagerGattCallback() {
+	private final BleManagerGattCallback mGattCallback = new BleManagerGattCallback() {
 
 		@Override
 		protected void initialize() {
@@ -91,7 +92,7 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 			// After the initialization is complete, the onDeviceReady(...) method will be called.
 
 			// Increase the MTU
-			requestMtu(43)
+			/*requestMtu(43)
 					.with((device, mtu) -> log(LogContract.Log.Level.APPLICATION, "MTU changed to " + mtu))
 					.done(device -> {
 						// You may do some logic in here that should be done when the request finished successfully.
@@ -131,7 +132,7 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 					.done(device -> log(LogContract.Log.Level.APPLICATION, "Notifications enabled successfully"))
 					// Methods called in case of an error, for example when the characteristic does not have Notify property
 					.fail((device, status) -> log(Log.WARN, "Failed to enable notifications"))
-					.enqueue();
+					.enqueue();*/
 		}
 
 		@Override
@@ -149,9 +150,6 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 
 		@Override
 		protected void onDeviceDisconnected() {
-			// Release Battery Service
-			super.onDeviceDisconnected();
-
 			// TODO Release references to your characteristics.
 			mRequiredCharacteristic = null;
 			mDeviceNameCharacteristic = null;
@@ -168,7 +166,7 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 
 			// Device is ready, let's read something here. Usually there is nothing else to be done
 			// here, as all had been done during initialization.
-			readCharacteristic(mOptionalCharacteristic)
+			/*readCharacteristic(mOptionalCharacteristic)
 					.with((device, data) -> {
 						// Characteristic value has been read
 						// Let's do some magic with it.
@@ -179,34 +177,11 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 							log(Log.WARN, "Value is empty!");
 						}
 					})
-					.enqueue();
+					.enqueue();*/
 		}
 	};
 
 	// TODO Define manager's API
-
-	/**
-	 * This method will write important data to the device.
-	 *
-	 * @param parameter parameter to be written.
-	 */
-	void performAction(final String parameter) {
-		log(Log.VERBOSE, "Changing device name to \"" + parameter + "\"");
-		// Write some data to the characteristic.
-		writeCharacteristic(mDeviceNameCharacteristic, Data.from(parameter))
-				// If data are longer than MTU-3, they will be chunked into multiple packets.
-				// Check out other split options, with .split(...).
-				.split()
-				// Callback called when data were sent, or added to outgoing queue in case
-				// Write Without Request type was used.
-				.with((device, data) -> log(Log.DEBUG, data.size() + " bytes were sent"))
-				// Callback called when data were sent, or added to outgoing queue in case
-				// Write Without Request type was used. This is called after .with(...) callback.
-				.done(device -> log(LogContract.Log.Level.APPLICATION, "Device name set to \"" + parameter + "\""))
-				// Callback called when write has failed.
-				.fail((device, status) -> log(Log.WARN, "Failed to change device name"))
-				.enqueue();
-	}
 
     public void notifyCall(String callerId) {
 		byte[][] data = transport.pushContent(callerId, BrtlUtils.Call);

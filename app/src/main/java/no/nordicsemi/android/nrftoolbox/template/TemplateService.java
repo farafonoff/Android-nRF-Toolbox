@@ -102,16 +102,6 @@ public class TemplateService extends BleProfileService implements TemplateManage
 	class TemplateBinder extends LocalBinder {
 		// TODO Define service API that may be used by a bound Activity
 
-		/**
-		 * Sends some important data to the device.
-		 *
-		 * @param parameter some parameter.
-		 */
-		public void performAction(final String parameter) {
-			TemplateService.this.
-			 mManager.performAction(parameter);
-		}
-
 		public void notifyCall(final String callerId, int times) {
 			TemplateService.this.notifyCall(callerId, times);
 			//mManager.notifyCall(callerId);
