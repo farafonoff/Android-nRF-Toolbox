@@ -112,7 +112,7 @@ public class MyCalendarService extends IntentService {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 234324243, intent, 0);
         AlarmManager manager = (AlarmManager)(this.getSystemService( Context.ALARM_SERVICE ));
         Date adate = new Date(date.getTime()-120*1000);
-        manager.set( AlarmManager.RTC_WAKEUP, adate.getTime(), pendingIntent );
+        manager.setExactAndAllowWhileIdle( AlarmManager.RTC_WAKEUP, adate.getTime(), pendingIntent );
         Log.i("MyCalendar", "Next alarm at "+ adate);
     }
 
