@@ -1,6 +1,7 @@
 package no.nordicsemi.android.nrftoolbox.template;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -9,6 +10,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.ContactsContract;
@@ -27,6 +29,7 @@ public class PhoneBroadcastReceiver extends BroadcastReceiver {
 
     }
 
+    @TargetApi(Build.VERSION_CODES.O)
     @Override
     public void onReceive(Context context, Intent intent) {
         Bundle bundle = intent.getExtras();
@@ -45,14 +48,11 @@ public class PhoneBroadcastReceiver extends BroadcastReceiver {
         if (bracelet != null && bracelet.isConnected()) {
             bracelet.notifyCall(phoneNr);
         }*/
-        Intent serviceIntent = new Intent(context, TemplateService.class);
-        serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS, "46:31:35:80:04:A8");
-        serviceIntent.putExtra("notify", "call");
-        serviceIntent.putExtra("notifyContent", phoneNr);
-        context.startForegroundService(serviceIntent);
-        //context.startService(serviceIntent);
-        Toast.makeText(context,
-                "Incoming: "+phoneNr,
-                Toast.LENGTH_LONG).show();
+        if (TelephonyManager.EXTRA_STATE_RINGING.equals(state)) {
+            TemplateService.startForCall(context, phoneNr);
+            Toast.makeText(context,
+                    "Incoming: "+state+phoneNr,
+                    Toast.LENGTH_LONG).show();
+        }
     }
 }

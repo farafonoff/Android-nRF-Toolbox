@@ -23,6 +23,7 @@
 package no.nordicsemi.android.nrftoolbox.template;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -34,6 +35,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -76,6 +78,24 @@ public class TemplateService extends BleProfileService implements TemplateManage
 
 	PhoneBroadcastReceiver mReciever = new PhoneBroadcastReceiver();
 
+	@TargetApi(Build.VERSION_CODES.O)
+	public static void startForCall(Context context, String phoneNr) {
+		Intent serviceIntent = new Intent(context, TemplateService.class);
+		serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS, "46:31:35:80:04:A8");
+		serviceIntent.putExtra("notify", "call");
+		serviceIntent.putExtra("notifyContent", phoneNr);
+		context.startForegroundService(serviceIntent);
+	}
+
+	@TargetApi(Build.VERSION_CODES.O)
+	public static void startForMessage(Context context, String text) {
+		Intent serviceIntent = new Intent(context, TemplateService.class);
+		serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS, "46:31:35:80:04:A8");
+		serviceIntent.putExtra("notify", "message");
+		serviceIntent.putExtra("notifyContent", text);
+		context.startForegroundService(serviceIntent);
+	}
+
 	/**
 	 * This local binder is an interface for the bound activity to operate with the sensor.
 	 */
@@ -103,18 +123,26 @@ public class TemplateService extends BleProfileService implements TemplateManage
 		 int original = super.onStartCommand(intent, flags, startId);
 		 String notifyType = intent.getStringExtra("notify");
 		 String notifyContent = intent.getStringExtra("notifyContent");
+		 boolean my = false;
 		 if ("call".equals(notifyType)) {
-			 final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ToolboxApplication.CONNECTED_DEVICE_CHANNEL);
-			 builder.setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.template_notification_connected_message, getDeviceName()));
-			 builder.setSmallIcon(R.drawable.ic_stat_notify_template);
-			 //builder.setShowWhen(defaults != 0).setDefaults(defaults).setAutoCancel(true).setOngoing(true);
-			 //builder.addAction(new NotificationCompat.Action(R.drawable.ic_action_bluetooth, getString(R.string.template_notification_action_disconnect), disconnectAction));
-			 final Notification notification = builder.build();
-			 startForeground(1, notification);
-		 	notifyCall(notifyContent, 2);
-		 	return START_STICKY;
+			 notifyCall(notifyContent, 2);
+			 my = true;
 		 }
-		 return original;
+		if ("message".equals(notifyType)) {
+			notifyMessage(notifyContent, 5);
+			my = true;
+		}
+		if (my) {
+			final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, ToolboxApplication.CONNECTED_DEVICE_CHANNEL);
+			builder.setContentTitle(getString(R.string.app_name)).setContentText(getString(R.string.template_notification_connected_message, getDeviceName()));
+			builder.setSmallIcon(R.drawable.ic_stat_notify_template);
+			//builder.setShowWhen(defaults != 0).setDefaults(defaults).setAutoCancel(true).setOngoing(true);
+			//builder.addAction(new NotificationCompat.Action(R.drawable.ic_action_bluetooth, getString(R.string.template_notification_action_disconnect), disconnectAction));
+			final Notification notification = builder.build();
+			startForeground(1, notification);
+			return START_STICKY;
+		}
+		return original;
 	}
 
 	String getFromPhonebook(Context context, String number) {
@@ -137,16 +165,31 @@ public class TemplateService extends BleProfileService implements TemplateManage
 	}
 
 	ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+	int maxlen = 13;
 	void notifyCall(final String callerId, int times) {
 		String displayName = getFromPhonebook(this, callerId);
 		String text = BrtlUtils.transliterate(displayName == null?callerId:displayName);
-		if (text.length() > 11) {
-			text = text.substring(0, 11);
+		if (text.length() > maxlen) {
+			text = text.substring(0, maxlen);
 		}
 		final String notifyText = text;
 		mManager.notifyCall(notifyText);
 		if (times > 1) {
 			ScheduledFuture handle = executorService.scheduleAtFixedRate(() -> mManager.notifyCall(notifyText), 5,5, TimeUnit.SECONDS);
+			Runnable canceller = () -> handle.cancel(false);
+			executorService.schedule(canceller, 5*times, TimeUnit.SECONDS);
+		}
+	}
+
+	void notifyMessage(final String message, int times) {
+		String text = BrtlUtils.transliterate(message);
+		if (text.length() > maxlen) {
+			text = text.substring(0, maxlen);
+		}
+		final String notifyText = text;
+		mManager.notifyMessage(notifyText);
+		if (times > 1) {
+			ScheduledFuture handle = executorService.scheduleAtFixedRate(() -> mManager.notifyMessage(notifyText), 5,5, TimeUnit.SECONDS);
 			Runnable canceller = () -> handle.cancel(false);
 			executorService.schedule(canceller, 5*times, TimeUnit.SECONDS);
 		}

@@ -209,7 +209,7 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 	}
 
     public void notifyCall(String callerId) {
-		byte[][] data = transport.pushContent(callerId);
+		byte[][] data = transport.pushContent(callerId, BrtlUtils.Call);
 		writeCharacteristic(mRequiredCharacteristic, new Data(data[0]))
 				// If data are longer than MTU-3, they will be chunked into multiple packets.
 				// Check out other split options, with .split(...).
@@ -220,6 +220,23 @@ public class TemplateManager extends BatteryManager<TemplateManagerCallbacks> {
 				// Callback called when data were sent, or added to outgoing queue in case
 				// Write Without Request type was used. This is called after .with(...) callback.
 				.done(device -> log(LogContract.Log.Level.APPLICATION, "Sent notify \"" + callerId + "\""))
+				// Callback called when write has failed.
+				.fail((device, status) -> log(Log.WARN, "Failed to notify"))
+				.enqueue();
+	}
+
+	public void notifyMessage(String text) {
+		byte[][] data = transport.pushContent(text, BrtlUtils.Message);
+		writeCharacteristic(mRequiredCharacteristic, new Data(data[0]))
+				// If data are longer than MTU-3, they will be chunked into multiple packets.
+				// Check out other split options, with .split(...).
+				//.split()
+				// Callback called when data were sent, or added to outgoing queue in case
+				// Write Without Request type was used.
+				.with((device, sent) -> log(Log.DEBUG, sent.size() + " bytes were sent"))
+				// Callback called when data were sent, or added to outgoing queue in case
+				// Write Without Request type was used. This is called after .with(...) callback.
+				.done(device -> log(LogContract.Log.Level.APPLICATION, "Sent notify \"" + text + "\""))
 				// Callback called when write has failed.
 				.fail((device, status) -> log(Log.WARN, "Failed to notify"))
 				.enqueue();

@@ -5,8 +5,10 @@ import java.util.ArrayList;
 public class BrtlUtils {
     static int prefix = (byte)0xab;
     static byte PushContent = 0x17;
+    static byte Call = 0x01;
+    static byte Message = 0x02;
 
-    byte[][] pushContent(String data) {
+    byte[][] pushContent(String data, byte type) {
         // "AB", 0x17, 0x01, data
         ArrayList<String> parts = new ArrayList<>();
         for(int i=0; i<data.length();i+=24) {
@@ -18,7 +20,7 @@ public class BrtlUtils {
         }
         byte[][] result = new byte[parts.size()][];
         for(int i=0;i<parts.size();++i) {
-            result[i] = framePacket(0xab, PushContent, 0x01, parts.size(), i, parts.get(i));
+            result[i] = framePacket(0xab, PushContent, type, parts.size(), i, parts.get(i));
         }
         return result;
     }
@@ -74,7 +76,7 @@ public class BrtlUtils {
 
     public static void main(String[] args) {
         BrtlUtils subject = new BrtlUtils();
-        byte[][] test = subject.pushContent("+74957555923");
+        byte[][] test = subject.pushContent("+74957555923", Call);
         System.out.println(print(test[0]));
     }
 

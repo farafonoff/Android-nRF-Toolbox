@@ -30,6 +30,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.view.Menu;
@@ -43,6 +44,7 @@ import java.util.UUID;
 import no.nordicsemi.android.nrftoolbox.R;
 import no.nordicsemi.android.nrftoolbox.profile.BleProfileService;
 import no.nordicsemi.android.nrftoolbox.profile.BleProfileServiceReadyActivity;
+import no.nordicsemi.android.nrftoolbox.template.calendarservice.CalendarService;
 import no.nordicsemi.android.nrftoolbox.template.settings.SettingsActivity;
 
 /**
@@ -63,27 +65,39 @@ public class TemplateActivity extends BleProfileServiceReadyActivity<TemplateSer
 		setGUI();
 	}
 
+	String[] permissionz = {Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CONTACTS, Manifest.permission.READ_CALENDAR};
+
 	private void setGUI() {
 		// TODO assign your views to fields
 		mValueView = findViewById(R.id.value);
 		mBatteryLevelView = findViewById(R.id.battery);
 
-		findViewById(R.id.action_set_name).setOnClickListener(v -> getService().notifyCall("Hello World", 1));
-
-		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED
-			||
-			ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED)
-		{
-			requestPermission();
+		//findViewById(R.id.action_set_name).setOnClickListener(v -> getService().notifyCall("Hello World", 1));
+		findViewById(R.id.action_set_name).setOnClickListener(v -> MyCalendarService.startActionAlarm(this));
+		List<String> missing = new ArrayList<>();
+		for(String permission: permissionz) {
+			if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+				missing.add(permission);
+			}
+		}
+		if (!missing.isEmpty()) {
+			ActivityCompat.requestPermissions(this,missing.toArray(new String[missing.size()]),
+					666);
+		} else {
+			afterPermissionsInit();
 		}
 	}
 
-	public void requestPermission() {
-		final List<String> permissionsList = new ArrayList<String>();
-		permissionsList.add(Manifest.permission.READ_PHONE_STATE);
-		permissionsList.add(Manifest.permission.READ_CONTACTS);
-		ActivityCompat.requestPermissions(this,permissionsList.toArray(new String[permissionsList.size()]),
-				1);
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+		if (requestCode==666) {
+			afterPermissionsInit();
+		}
+	}
+
+	void afterPermissionsInit() {
+		//CalendarService.readCalendar(this);
+		MyCalendarService.startActionInit(this);
 	}
 
 	@Override
