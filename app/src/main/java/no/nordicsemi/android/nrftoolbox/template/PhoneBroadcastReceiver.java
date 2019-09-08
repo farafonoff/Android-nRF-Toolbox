@@ -34,6 +34,7 @@ public class PhoneBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Bundle bundle = intent.getExtras();
         String phoneNr = bundle.getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
+        if (phoneNr == null) phoneNr = "Null number";
         String state = bundle.getString(TelephonyManager.EXTRA_STATE);
         /*if (bracelet == null) {
             Intent serviceIntent = new Intent(context, TemplateService.class);
